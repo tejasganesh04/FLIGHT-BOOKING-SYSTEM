@@ -3,6 +3,11 @@ const router = express.Router();
 const {AirplaneMiddlewares} = require('../../middlewares');
 const {AirplaneController} = require('../../controllers');
 
-router.post('/airplanes',AirplaneMiddlewares.validateCreateRequest,AirplaneController.createAirplane);
+router.post('/',AirplaneMiddlewares.validateCreateRequest,AirplaneController.createAirplane);
+
+router.get('/',AirplaneController.getAirplanes);
+
+
 module.exports = router;
+
 
