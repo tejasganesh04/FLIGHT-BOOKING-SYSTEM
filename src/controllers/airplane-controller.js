@@ -1,6 +1,7 @@
 const { AirplaneService } = require('../services');
 const {StatusCodes} = require('http-status-codes');
-const {SuccessResponse, ErrorResponse} = require('../utils/common')
+const {SuccessResponse, ErrorResponse} = require('../utils/common');
+
 
 /**
  * POST :/airplanes
@@ -73,9 +74,24 @@ async function destroyAirplane(req,res){
         res.status(error.statusCode).json(ErrorResponse);
     }
 }
+
+async function updateAirplane(req,res){
+    try {
+        const id = req.params.id;
+        const data = req.body;
+        const response = await AirplaneService.updateAirplane(data,id);
+        SuccessResponse.data = response;
+        res.status(StatusCodes.OK).json(SuccessResponse);
+    } catch (error) {
+         ErrorResponse.error = error;
+        res.status(error.statusCode).json(ErrorResponse);
+    }
+}
+
 module.exports = {
     createAirplane,
     getAirplanes,
     getAirplane,
-    destroyAirplane
+    destroyAirplane,
+    updateAirplane
 }

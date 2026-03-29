@@ -1,3 +1,4 @@
+
 const { AirplaneRepository} = require('../repositories');
 
 const AppError = require('../utils/errors/app-error');
@@ -54,7 +55,20 @@ async function destroyAirplane(id){
         if(error.statusCode == StatusCodes.NOT_FOUND){
             throw new AppError('The airplane you requested to delete is not present', error.statusCode);
         }
-        throw new AppError('Cannot Fetch data of all the Airplanes',StatusCodes.INTERNAL_SERVER_ERROR );
+        throw new AppError('Unable to delete the airplane',StatusCodes.INTERNAL_SERVER_ERROR );
+    }
+}
+
+async function updateAirplane(data,id){
+    try {
+        const response = await airplaneRepository.update(data,id);
+        return response;
+    } catch (error) {
+        if(error.statusCode == StatusCodes.NOT_FOUND){
+            throw new AppError('Airplane to be updated was not found',error.statusCode);
+        }
+        throw new AppError('Unable to update the airplane',StatusCodes.INTERNAL_SERVER_ERROR);
+
     }
 }
 
@@ -68,5 +82,6 @@ module.exports = {
     createAirplane,
     getAirplanes,
     getAirplane,
-    destroyAirplane
+    destroyAirplane,
+    updateAirplane
 }
