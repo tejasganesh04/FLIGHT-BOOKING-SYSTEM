@@ -4,14 +4,8 @@ const {SuccessResponse, ErrorResponse} = require('../utils/common');
 
 
 /**
- * POST :/flights
- * req-body{
- * 
- * 
- * 
- * }
- * @param {*} req
- * @param {*} res
+ * POST /flights — reads flight fields from req.body and delegates to FlightService.createFlight.
+ * Returns 201 on success; forwards AppError statusCode on failure.
  */
 async function createFlight(req,res){
     try {
@@ -36,8 +30,23 @@ async function createFlight(req,res){
     }
 }
 
+/**
+ * GET /flights — passes req.query filters (trips, price, travellers, tripDate, sort) to FlightService.getAllFlights.
+ * Returns 200 with matching flights; forwards AppError statusCode on failure.
+ */
+async function getAllFlights(req,res){
+    try {
+        const flights = await FlightService.getAllFlights(req.query);
+        SuccessResponse.data = flights;
+        res.status(StatusCodes.OK).json(SuccessResponse);
+    } catch (error) {
+        ErrorResponse.error = error;
+        res.status(error.statusCode).json(ErrorResponse);
+    }
+}
 
 
 module.exports = {
-    createFlight
+    createFlight,
+    getAllFlights
 }

@@ -11,15 +11,20 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.Airplane,{
-        foreignKey:'airplaneId'
+        foreignKey:'airplaneId',
+        as:'airplaneDetails'
       });
 
       this.belongsTo(models.Airport,{
-        foreignKey: 'departureAirportId'
+        foreignKey: 'departureAirportId',
+        targetKey: 'code',
+        as:'departureAirport'
       });
 
       this.belongsTo(models.Airport,{
-        foreignKey: 'arrivalAirportId'
+        foreignKey: 'arrivalAirportId',
+        targetKey: 'code',
+        as: 'arrivalAirport'
       });
 
     }
@@ -47,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull:false
     },
     boardingGate: { type:DataTypes.STRING},
-    totalSeats: {type:DataTypes.INTEGER,
+    totalSeats: {type:DataTypes.INTEGER,//total available seats
       allowNull:false
     }
   }, {
