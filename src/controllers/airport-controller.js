@@ -4,10 +4,14 @@ const {SuccessResponse, ErrorResponse} = require('../utils/common');
 
 
 /**
- * POST :/airports
- * req-body{name: 'IGI', code: 'DEL', address: 'New Delhi', cityId: 1}
- * @param {*} req
- * @param {*} res
+ * POST /api/v1/airports
+ * Creates a new airport linked to an existing city. The validateCreateRequest middleware
+ * ensures name, code, and cityId are present before this handler runs.
+ *
+ * Request body : { name: string, code: string, address?: string, cityId: number }
+ * Response 201 : { success: true, data: <Airport> }
+ * Response 400 : validation failure (missing fields or duplicate name/code).
+ * Response 500 : unexpected database error.
  */
 async function createAirport(req,res){
     try {
@@ -27,6 +31,13 @@ async function createAirport(req,res){
     }
 }
 
+/**
+ * GET /api/v1/airports
+ * Returns all airport records.
+ *
+ * Response 200: { success: true, data: <Airport[]> }
+ * Response 500: unexpected database error.
+ */
 async function getAirports(req,res){
     try {
         const airports = await AirportService.getAirports();
@@ -39,9 +50,12 @@ async function getAirports(req,res){
 }
 
 /**
- * GET /airports/:id
- * @param {*} req
- * @param {*} res
+ * GET /api/v1/airports/:id
+ * Fetches a single airport by primary key from req.params.id.
+ *
+ * Response 200: { success: true, data: <Airport> }
+ * Response 404: airport not found.
+ * Response 500: unexpected database error.
  */
 async function getAirport(req,res){
     try {
@@ -56,7 +70,12 @@ async function getAirport(req,res){
 }
 
 /**
- * DELETE /airports/:id
+ * DELETE /api/v1/airports/:id
+ * Deletes an airport by primary key. Cascades to associated Flights.
+ *
+ * Response 200: { success: true, data: 1 }
+ * Response 404: airport not found.
+ * Response 500: unexpected database error.
  */
 async function destroyAirport(req,res){
     try {
@@ -70,6 +89,14 @@ async function destroyAirport(req,res){
     }
 }
 
+/**
+ * PATCH /api/v1/airports/:id
+ * Updates the airport record identified by req.params.id with fields from req.body.
+ *
+ * Response 200: { success: true, data: [affectedRowCount] }
+ * Response 404: airport not found.
+ * Response 500: unexpected database error.
+ */
 async function updateAirport(req,res){
     try {
         const id = req.params.id;

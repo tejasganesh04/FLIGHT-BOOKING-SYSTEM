@@ -6,6 +6,16 @@ const {StatusCodes} = require('http-status-codes');
 
 const airplaneRepository = new AirplaneRepository();
 
+/**
+ * Creates a new airplane record in the database.
+ * On SequelizeValidationError, collects all field-level messages and throws 400 BAD_REQUEST.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {Object} data              - Airplane fields.
+ * @param {string} data.modelNumber  - Alphanumeric model identifier (e.g., "airbus320").
+ * @param {number} [data.capacity]   - Seat capacity (max 1000, defaults to 0).
+ * @returns {Promise<Airplane>} The newly created Airplane instance.
+ */
 async function createAirplane(data){
     try{
         const airplane = await airplaneRepository.create(data);
@@ -23,6 +33,12 @@ async function createAirplane(data){
     }
 }
 
+/**
+ * Fetches all airplane records from the database.
+ * Throws 500 INTERNAL_SERVER_ERROR if the query fails.
+ *
+ * @returns {Promise<Airplane[]>} Array of all Airplane instances.
+ */
 async function getAirplanes(){
     try {
         const airplanes = await airplaneRepository.getAll();
@@ -34,6 +50,14 @@ async function getAirplanes(){
     }
 }
 
+/**
+ * Fetches a single airplane by its primary key.
+ * Throws 404 NOT_FOUND if the airplane does not exist.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {number} id - Primary key of the airplane to fetch.
+ * @returns {Promise<Airplane>} The matching Airplane instance.
+ */
 async function getAirplane(id){
     try {
         const airplane = await airplaneRepository.get(id);
@@ -47,6 +71,15 @@ async function getAirplane(id){
     }
 }
 
+/**
+ * Deletes an airplane record by its primary key.
+ * Due to CASCADE rules, deleting an airplane also deletes its associated Flights and Seats.
+ * Throws 404 NOT_FOUND if the airplane does not exist.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {number} id - Primary key of the airplane to delete.
+ * @returns {Promise<number>} Number of rows deleted (1 on success).
+ */
 async function destroyAirplane(id){
       try {
         const response = await airplaneRepository.destroy(id);
@@ -59,6 +92,15 @@ async function destroyAirplane(id){
     }
 }
 
+/**
+ * Updates an airplane record identified by the given id.
+ * Throws 404 NOT_FOUND if no matching airplane exists.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {Object} data - Fields to update (e.g., { capacity: 180 }).
+ * @param {number} id   - Primary key of the airplane to update.
+ * @returns {Promise<Array>} Sequelize update result [affectedRowCount].
+ */
 async function updateAirplane(data,id){
     try {
         const response = await airplaneRepository.update(data,id);

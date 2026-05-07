@@ -1,6 +1,18 @@
 const {StatusCodes} = require('http-status-codes');
 const {ErrorResponse} = require('../utils/common');
 const AppError = require('../utils/errors/app-error');
+/**
+ * Middleware: validateCreateRequest (Flights)
+ * Guards the POST /flights route by checking that all required fields are present in req.body.
+ * Required fields: flightNumber, airplaneId, departureAirportId, arrivalAirportId,
+ *                  arrivalTime, departureTime, price, totalSeats.
+ * Responds 400 BAD_REQUEST immediately with a descriptive message if any field is missing.
+ * Calls next() only when all fields pass, allowing the request to reach the controller.
+ *
+ * @param {import('express').Request}  req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
 function validateCreateRequest(req,res,next){
     if(!req.body.flightNumber){
         ErrorResponse.message = 'Something went wrong while creating flight';
@@ -46,6 +58,15 @@ function validateCreateRequest(req,res,next){
 }
 
 
+/**
+ * Middleware: validateUpdateSeatsRequest (Flights)
+ * Guards the PATCH /flights/:id/seats route by ensuring `seats` is present in req.body.
+ * Responds 400 BAD_REQUEST if the field is missing; calls next() otherwise.
+ *
+ * @param {import('express').Request}  req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
 function validateUpdateSeatsRequest(req,res,next){
   
     if(!req.body.seats){

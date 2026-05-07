@@ -8,20 +8,30 @@ const {Op} = require('sequelize');
 const flightRepository = new FlightRepository();
 
 /**
- * Validates departure is before arrival, then creates a new flight record.
- * Throws BAD_REQUEST for time conflicts, INTERNAL_SERVER_ERROR for DB failures.
+ * Validates the departure/arrival times and creates a new flight record in the database.
+ *
+ * Steps:
+ *  1. Compares departureTime and arrivalTime — throws 400 BAD_REQUEST if departure is after arrival.
+ *  2. Persists the flight via the repository.
+ *  3. On SequelizeValidationError, collects all field-level messages and throws 400 BAD_REQUEST.
+ *  4. Re-throws any AppError as-is (so intentional 400s are not masked as 500s).
+ *  5. Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {Object} data - Flight fields: flightNumber, airplaneId, departureAirportId,
+ *                        arrivalAirportId, departureTime, arrivalTime, price, boardingGate, totalSeats.
+ * @returns {Promise<Flight>} The newly created Flight instance.
  */
 async function createFlight(data){
     try{
         if(compareTime(data.departureTime, data.arrivalTime)){
             throw new AppError('Departure time must be before arrival time', StatusCodes.BAD_REQUEST);
         }
-        const airport = await flightRepository.create(data);
-        return airport;
+        const flight = await flightRepository.create(data);
+        return flight;
     }catch(error){
+        if(error instanceof AppError) throw error; // re-throw known errors without masking them
         if(error.name == 'SequelizeValidationError'){
             let explanation = [];
-            
             error.errors.forEach((err)=>{
                 explanation.push(err.message);
             });
@@ -33,8 +43,20 @@ async function createFlight(data){
 
 
 /**
- * Builds dynamic WHERE and ORDER clauses from query filters (trips, price, travellers, tripDate, sort),
- * then fetches matching flights. Throws BAD_REQUEST for same-airport trips, INTERNAL_SERVER_ERROR for DB failures.
+ * Builds dynamic WHERE and ORDER clauses from URL query parameters, then fetches matching flights.
+ *
+ * Supported query params:
+ *  - trips       : "BOM-DEL"           → filters by departureAirportId and arrivalAirportId.
+ *  - price       : "500-2000"          → BETWEEN filter; omit min ("−2000") or max ("500") for open ranges.
+ *  - travellers  : "3"                 → only flights with totalSeats >= this value.
+ *  - tripDate    : "2026-04-15"        → flights departing on this calendar day (00:00 to 23:59).
+ *  - sort        : "price_ASC,departureTime_DESC" → comma-separated column_DIRECTION pairs.
+ *
+ * Throws BAD_REQUEST if departure and arrival airport are identical.
+ * Throws INTERNAL_SERVER_ERROR if the database query fails.
+ *
+ * @param {Object} filters - Parsed req.query object from Express.
+ * @returns {Promise<Flight[]>} Array of matching Flight instances with nested associations.
  */
 async function getAllFlights(filters){
     let customFilter = {};
@@ -104,6 +126,14 @@ async function getAllFlights(filters){
 }
 
 
+/**
+ * Fetches a single flight by its primary key.
+ * Throws NOT_FOUND (proxied from repository) if the flight does not exist.
+ * Throws INTERNAL_SERVER_ERROR for unexpected database failures.
+ *
+ * @param {number} id - Primary key of the flight to fetch.
+ * @returns {Promise<Flight>} The matching Flight instance.
+ */
 async function getFlight(id){
     try {
         const flight = await flightRepository.get(id);
@@ -117,6 +147,17 @@ async function getFlight(id){
     }
 }
 
+/**
+ * Delegates seat count update to the repository, which handles row locking and transactions.
+ * Called by the Booking Service after a successful payment to decrement seats,
+ * or on booking cancellation to increment them back.
+ *
+ * @param {Object}  data          - Update payload.
+ * @param {number}  data.flightId - Primary key of the flight to update.
+ * @param {number}  data.seats    - Number of seats to adjust.
+ * @param {boolean} [data.dec]    - true → decrement (default), false → increment.
+ * @returns {Promise<Flight>} The updated Flight instance with refreshed seat count.
+ */
 async function updateSeats(data){
     try {
         const response = await flightRepository.updateRemainingSeats(data.flightId,data.seats,data.dec);

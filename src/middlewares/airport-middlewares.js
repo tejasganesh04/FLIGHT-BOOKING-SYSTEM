@@ -1,6 +1,16 @@
 const {StatusCodes} = require('http-status-codes');
 const {ErrorResponse} = require('../utils/common');
 const AppError = require('../utils/errors/app-error');
+/**
+ * Middleware: validateCreateRequest (Airports)
+ * Guards the POST /airports route by verifying that name, code, and cityId are all
+ * present in req.body. Responds 400 BAD_REQUEST for each missing field in order;
+ * calls next() only when all three pass.
+ *
+ * @param {import('express').Request}  req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
 function validateCreateRequest(req,res,next){
     if(!req.body.name){
         ErrorResponse.message = 'Something went wrong while creating airport';

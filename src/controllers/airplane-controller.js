@@ -4,10 +4,13 @@ const {SuccessResponse, ErrorResponse} = require('../utils/common');
 
 
 /**
- * POST :/airplanes
- * req-body{modelNumber: 'airbus320', capacity: 200}
- * @param {*} req 
- * @param {*} res 
+ * POST /api/v1/airplanes
+ * Creates a new airplane. The validateCreateRequest middleware ensures modelNumber is present.
+ *
+ * Request body : { modelNumber: string, capacity?: number }
+ * Response 201 : { success: true, data: <Airplane> }
+ * Response 400 : validation failure (e.g., non-alphanumeric modelNumber, capacity > 1000).
+ * Response 500 : unexpected database error.
  */
 async function createAirplane(req,res){
     try {
@@ -27,6 +30,13 @@ async function createAirplane(req,res){
 
 }
 
+/**
+ * GET /api/v1/airplanes
+ * Returns all airplane records.
+ *
+ * Response 200: { success: true, data: <Airplane[]> }
+ * Response 500: unexpected database error.
+ */
 async function getAirplanes(req,res){
     
     try {
@@ -43,9 +53,12 @@ async function getAirplanes(req,res){
 
 
 /**
- * 
- * GET/airplanes/:id
- * req-body {}
+ * GET /api/v1/airplanes/:id
+ * Fetches a single airplane by primary key from req.params.id.
+ *
+ * Response 200: { success: true, data: <Airplane> }
+ * Response 404: airplane not found.
+ * Response 500: unexpected database error.
  */
 async function getAirplane(req,res){
     try {
@@ -61,7 +74,12 @@ async function getAirplane(req,res){
 
 
 /**
- * /DELETE : /airplanes/:id
+ * DELETE /api/v1/airplanes/:id
+ * Deletes an airplane by primary key. Cascades to associated Flights and Seats.
+ *
+ * Response 200: { success: true, data: 1 }
+ * Response 404: airplane not found.
+ * Response 500: unexpected database error.
  */
 async function destroyAirplane(req,res){
     try {
@@ -75,6 +93,14 @@ async function destroyAirplane(req,res){
     }
 }
 
+/**
+ * PATCH /api/v1/airplanes/:id
+ * Updates the airplane record identified by req.params.id with fields from req.body.
+ *
+ * Response 200: { success: true, data: [affectedRowCount] }
+ * Response 404: airplane not found.
+ * Response 500: unexpected database error.
+ */
 async function updateAirplane(req,res){
     try {
         const id = req.params.id;

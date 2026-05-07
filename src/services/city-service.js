@@ -5,6 +5,16 @@ const {StatusCodes} = require('http-status-codes');
 
 const cityRepository = new CityRepository();
 
+/**
+ * Creates a new city record in the database.
+ * City names are unique; a duplicate name triggers a SequelizeUniqueConstraintError → 400 BAD_REQUEST.
+ * Other validation errors are also collected and returned as 400 BAD_REQUEST.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {Object} data       - City fields.
+ * @param {string} data.name  - Name of the city (must be unique, e.g., "Mumbai").
+ * @returns {Promise<City>} The newly created City instance.
+ */
 async function createCity(data) {
      try{
         const city = await cityRepository.create(data);
@@ -24,6 +34,14 @@ async function createCity(data) {
 }
 
 
+/**
+ * Deletes a city record by its primary key.
+ * Throws 404 NOT_FOUND if the city does not exist.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {number} id - Primary key of the city to delete.
+ * @returns {Promise<number>} Number of rows deleted (1 on success).
+ */
 async function destroyCity(id){
       try {
         const response = await cityRepository.destroy(id);
@@ -36,6 +54,15 @@ async function destroyCity(id){
     }
 }
 
+/**
+ * Updates a city record identified by the given id.
+ * Throws 404 NOT_FOUND if no matching city exists.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {Object} data       - Fields to update (e.g., { name: 'New City Name' }).
+ * @param {number} id         - Primary key of the city to update.
+ * @returns {Promise<Array>} Sequelize update result [affectedRowCount].
+ */
 async function updateCity(data,id){
     try {
         const response = await cityRepository.update(data,id);

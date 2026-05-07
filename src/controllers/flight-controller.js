@@ -4,8 +4,14 @@ const {SuccessResponse, ErrorResponse} = require('../utils/common');
 
 
 /**
- * POST /flights — reads flight fields from req.body and delegates to FlightService.createFlight.
- * Returns 201 on success; forwards AppError statusCode on failure.
+ * POST /api/v1/flights
+ * Reads all required flight fields from req.body and delegates creation to FlightService.
+ * The middleware validateCreateRequest runs before this and guarantees required fields are present.
+ *
+ * Request body: { flightNumber, airplaneId, departureAirportId, arrivalAirportId,
+ *                 departureTime, arrivalTime, price, boardingGate, totalSeats }
+ * Response 201: { success: true, data: <Flight> }
+ * Response 4xx/5xx: { success: false, error: <AppError> }
  */
 async function createFlight(req,res){
     try {
@@ -31,8 +37,12 @@ async function createFlight(req,res){
 }
 
 /**
- * GET /flights — passes req.query filters (trips, price, travellers, tripDate, sort) to FlightService.getAllFlights.
- * Returns 200 with matching flights; forwards AppError statusCode on failure.
+ * GET /api/v1/flights
+ * Passes all query parameters (trips, price, travellers, tripDate, sort) to FlightService.getAllFlights,
+ * which builds dynamic WHERE/ORDER clauses before hitting the database.
+ *
+ * Response 200: { success: true, data: <Flight[]> }
+ * Response 4xx/5xx: { success: false, error: <AppError> }
  */
 async function getAllFlights(req,res){
     try {
@@ -46,6 +56,15 @@ async function getAllFlights(req,res){
 }
 
 
+/**
+ * GET /api/v1/flights/:id
+ * Fetches a single flight by its primary key from req.params.id.
+ * Consumed by the Booking Service to retrieve flight details before confirming a booking.
+ *
+ * Response 200: { success: true, data: <Flight> }
+ * Response 404: flight not found.
+ * Response 500: unexpected database error.
+ */
 async function getFlight(req,res){
     try {
         const id = req.params.id;
@@ -58,6 +77,17 @@ async function getFlight(req,res){
     }
 }
 
+/**
+ * PATCH /api/v1/flights/:id/seats
+ * Adjusts the totalSeats count on a flight — called by the Booking Service after payment
+ * (dec=true to book seats) or after cancellation (dec=false to release seats).
+ * Uses a row-level DB lock internally to prevent race conditions.
+ *
+ * Request body : { seats: <number>, dec?: <boolean> }
+ * Response 200 : { success: true, data: <updated Flight> }
+ * Response 400 : seats field missing (caught by validateUpdateSeatsRequest middleware).
+ * Response 500 : unexpected database error.
+ */
 async function updateSeats(req,res){
     try {
         const response = await FlightService.updateSeats({

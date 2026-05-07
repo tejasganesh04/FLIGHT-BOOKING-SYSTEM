@@ -6,6 +6,18 @@ const {StatusCodes} = require('http-status-codes');
 
 const airportRepository = new AirportRepository();
 
+/**
+ * Creates a new airport record in the database.
+ * On SequelizeValidationError, collects all field-level messages and throws 400 BAD_REQUEST.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {Object} data          - Airport fields.
+ * @param {string} data.name     - Full airport name (must be unique, e.g., "Indira Gandhi International").
+ * @param {string} data.code     - IATA airport code (must be unique, e.g., "DEL").
+ * @param {string} [data.address]- Physical address of the airport.
+ * @param {number} data.cityId   - Foreign key linking the airport to its city.
+ * @returns {Promise<Airport>} The newly created Airport instance.
+ */
 async function createAirport(data){
     try{
         const airport = await airportRepository.create(data);
@@ -23,6 +35,12 @@ async function createAirport(data){
     }
 }
 
+/**
+ * Fetches all airport records from the database.
+ * Throws 500 INTERNAL_SERVER_ERROR if the query fails.
+ *
+ * @returns {Promise<Airport[]>} Array of all Airport instances.
+ */
 async function getAirports(){
     try {
         const airport = await airportRepository.getAll();
@@ -34,6 +52,14 @@ async function getAirports(){
     }
 }
 
+/**
+ * Fetches a single airport by its primary key.
+ * Throws 404 NOT_FOUND if the airport does not exist.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {number} id - Primary key of the airport to fetch.
+ * @returns {Promise<Airport>} The matching Airport instance.
+ */
 async function getAirport(id){
     try {
         const airport = await airportRepository.get(id);
@@ -47,6 +73,15 @@ async function getAirport(id){
     }
 }
 
+/**
+ * Deletes an airport record by its primary key.
+ * Due to CASCADE rules, deleting an airport also deletes its associated Flights.
+ * Throws 404 NOT_FOUND if the airport does not exist.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {number} id - Primary key of the airport to delete.
+ * @returns {Promise<number>} Number of rows deleted (1 on success).
+ */
 async function destroyAirport(id){
       try {
         const response = await airportRepository.destroy(id);
@@ -59,6 +94,15 @@ async function destroyAirport(id){
     }
 }
 
+/**
+ * Updates an airport record identified by the given id.
+ * Throws 404 NOT_FOUND if no matching airport exists.
+ * Throws 500 INTERNAL_SERVER_ERROR for unexpected failures.
+ *
+ * @param {Object} data - Fields to update (e.g., { name: 'New Name', address: '...' }).
+ * @param {number} id   - Primary key of the airport to update.
+ * @returns {Promise<Array>} Sequelize update result [affectedRowCount].
+ */
 async function updateAirport(data,id){
     try {
         const response = await airportRepository.update(data,id);

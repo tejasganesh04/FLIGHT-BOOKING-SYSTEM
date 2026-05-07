@@ -4,10 +4,14 @@ const {SuccessResponse, ErrorResponse} = require('../utils/common');
 
 
 /**
- * POST :/city
- * req-body{name:'Ghaziabad'}
- * @param {*} req 
- * @param {*} res 
+ * POST /api/v1/cities
+ * Creates a new city. The validateCreateRequest middleware ensures name is present.
+ * City names are unique — duplicate names return 400 BAD_REQUEST.
+ *
+ * Request body : { name: string }
+ * Response 201 : { success: true, data: <City> }
+ * Response 400 : missing name or duplicate city name.
+ * Response 500 : unexpected database error.
  */
 async function createCity(req,res){
     try {
@@ -28,7 +32,12 @@ async function createCity(req,res){
 
 
 /**
- * /DELETE : /airplanes/:id
+ * DELETE /api/v1/cities/:id
+ * Deletes a city by primary key from req.params.id.
+ *
+ * Response 200: { success: true, data: 1 }
+ * Response 404: city not found.
+ * Response 500: unexpected database error.
  */
 async function destroyCity(req,res){
     try {
@@ -42,6 +51,14 @@ async function destroyCity(req,res){
     }
 }
 
+/**
+ * PATCH /api/v1/cities/:id
+ * Updates the city record identified by req.params.id with fields from req.body.
+ *
+ * Response 200: { success: true, data: [affectedRowCount] }
+ * Response 404: city not found.
+ * Response 500: unexpected database error.
+ */
 async function updateCity(req,res){
     try {
         const id = req.params.id;
