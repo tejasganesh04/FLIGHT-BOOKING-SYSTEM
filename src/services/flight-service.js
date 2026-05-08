@@ -5,7 +5,13 @@ const AppError = require('../utils/errors/app-error');
 const {StatusCodes} = require('http-status-codes');
 const {compareTime} = require('../utils/helpers/datetime-helpers');
 const {Op} = require('sequelize');
+const { Redis } = require('../config');
 const flightRepository = new FlightRepository();
+
+// Search results cached for 30 minutes.
+// Long TTL is justified by high search:book ratio — seat counts change slowly
+// relative to search volume, and booking validates live seat data anyway.
+const CACHE_TTL = 30 * 60;
 
 /**
  * Validates the departure/arrival times and creates a new flight record in the database.
@@ -61,7 +67,7 @@ async function createFlight(data){
 async function getAllFlights(filters){
     let customFilter = {};
     let sortFilter = [];
-    const endingTripTime  = "23:59:00";
+    const endingTripTime  = "23:59:59";
     
     // Query: ?trips=BOM-DEL
     // trips is a hyphen-separated string; we split it into departureAirportId and arrivalAirportId
@@ -118,7 +124,36 @@ async function getAllFlights(filters){
 
 
     try {
-        const flights = await flightRepository.getAllFlights(customFilter,sortFilter);
+        // Cache key: stable JSON representation of the filters object.
+        // Keys are sorted alphabetically so that ?trips=X&tripDate=Y and
+        // ?tripDate=Y&trips=X produce the same key — no duplicate cache entries
+        // for the same logical query in a different param order.
+        const cacheKey = `flights:search:${JSON.stringify(filters, Object.keys(filters).sort())}`;
+
+        // Cache hit — return immediately without touching the DB.
+        // Inner try-catch: if Redis is down, fall through to the DB instead of
+        // failing the request. Fails open intentionally — availability > consistency here.
+        try {
+            const cached = await Redis.get(cacheKey);
+            if (cached) return JSON.parse(cached);
+        } catch {
+            // Redis down — fall through to DB
+        }
+
+        const flights = await flightRepository.getAllFlights(customFilter, sortFilter);
+
+        // Cache miss — store result for subsequent requests.
+        // TTL = 30 minutes. Staleness is acceptable because:
+        //  1. Users search far more than they book (high read:write ratio).
+        //  2. Seat count changes are validated at booking time against live DB data,
+        //     so a stale search result never causes an invalid booking.
+        // Inner try-catch: if Redis is down, we still return the result to the user.
+        try {
+            await Redis.set(cacheKey, JSON.stringify(flights), 'EX', CACHE_TTL);
+        } catch {
+            // Redis down — return result anyway
+        }
+
         return flights;
     } catch (error) {
         throw new AppError('Cannot Fetch data of all the Flights',StatusCodes.INTERNAL_SERVER_ERROR );
